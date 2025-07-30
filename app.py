@@ -51,13 +51,15 @@ def outfit_image():
     if player_data is None:
         return jsonify({'error': 'Failed to fetch player info'}), 500
 
-    outfit_ids = player_data.get("AccountProfileInfo", {}).get("EquippedOutfit", [])
-    equipped_skills = player_data.get("AccountProfileInfo", {}).get("EquippedSkills", [])
+    # Corrigido: Pegar os itens equipados do lugar correto
+    outfit_ids = player_data.get("profileInfo", {}).get("equippedItems", [])
+    avatar_id = player_data.get("profileInfo", {}).get("avatarId", 406)  # 406 é o fallback
+    
     pet_info = player_data.get("petInfo", {})
     pet_id = pet_info.get("id")
     
     # Get first equipped weapon
-    equipped_weapons = player_data.get("AccountInfo", {}).get("EquippedWeapon", [])
+    equipped_weapons = player_data.get("playerData", {}).get("weaponSkinShows", [])
     weapon_id = equipped_weapons[0] if equipped_weapons else None
     print(f"Weapon ID: {weapon_id}")  # Debug print
 
@@ -108,14 +110,6 @@ def outfit_image():
 
     # Set avatar position with fixed Y-coordinate
     background_width, background_height = 720, 720
-
-    avatar_id = None
-    for skill_id in equipped_skills:
-        if str(skill_id).endswith('06'):
-            avatar_id = skill_id
-            break
-    if avatar_id is None:
-        avatar_id = 406
 
     if avatar_id:
         avatar_url = f'https://characteriroxmar.vercel.app/chars?id={avatar_id}'
