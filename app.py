@@ -14,7 +14,7 @@ executor = ThreadPoolExecutor(max_workers=10)
 
 # Fetch player info
 def fetch_player_info(uid, region):
-    player_info_url = f'https://irotechlab-x-marco-lab-playerinfo.vercel.app/player-info?region={region}&uid={uid}'
+    player_info_url = f'https://informacoes-completa-teste.vercel.app/player-info?region={region}&uid={uid}'
     response = requests.get(player_info_url)
     return response.json() if response.status_code == 200 else None
 
