@@ -12,7 +12,7 @@ executor = ThreadPoolExecutor(max_workers=10)
 
 # Configuration for image positioning and sizing
 IMAGE_CONFIG = {
-    "BACKGROUND": {"url": "https://iili.io/3LlJ82s.jpg"},
+    "BACKGROUND": {"url": "https://iili.io/F3cIKpp.jpg"},
     "OUTFIT_PARTS": [
         {"x": 110, "y": 90, "w": 120, "h": 120},
         {"x": 485, "y": 85, "w": 120, "h": 120},
