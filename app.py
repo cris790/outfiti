@@ -12,28 +12,11 @@ main_key = "NARAYAN"
 # ThreadPool for concurrent image fetching
 executor = ThreadPoolExecutor(max_workers=10)
 
-# Fetch player info - MODIFICADA para a nova API
+# Fetch player info
 def fetch_player_info(uid, region):
     player_info_url = f'https://freefirefwx-beta.squareweb.app/api/info_player?uid={uid}&region={region}'
     response = requests.get(player_info_url)
-    if response.status_code == 200:
-        data = response.json()
-        
-        # Transformar os dados para o formato esperado pelo resto do código
-        transformed = {
-            "AccountProfileInfo": {
-                "EquippedOutfit": data.get("profileInfo", {}).get("clothes", []),
-                "EquippedSkills": [skill.get("skillId") for skill in data.get("profileInfo", {}).get("equippedSkills", []) if isinstance(data.get("profileInfo", {}).get("equippedSkills", []), list) else []
-            },
-            "AccountInfo": {
-                "EquippedWeapon": data.get("basicInfo", {}).get("weaponSkinShows", [])
-            },
-            "petInfo": {
-                "id": data.get("petInfo", {}).get("petId")
-            }
-        }
-        return transformed
-    return None
+    return response.json() if response.status_code == 200 else None
 
 # Fetch and optionally resize an image
 def fetch_and_process_image(image_url, size=None):
@@ -68,15 +51,24 @@ def outfit_image():
     if player_data is None:
         return jsonify({'error': 'Failed to fetch player info'}), 500
 
-    outfit_ids = player_data.get("AccountProfileInfo", {}).get("EquippedOutfit", [])
-    equipped_skills = player_data.get("AccountProfileInfo", {}).get("EquippedSkills", [])
-    pet_info = player_data.get("petInfo", {})
-    pet_id = pet_info.get("id")
+    # Debug prints to check the data structure
+    print("Player data:", player_data)
     
-    # Get first equipped weapon
-    equipped_weapons = player_data.get("AccountInfo", {}).get("EquippedWeapon", [])
-    weapon_id = equipped_weapons[0] if equipped_weapons else None
-    print(f"Weapon ID: {weapon_id}")  # Debug print
+    # Get outfit items from profileInfo.clothes
+    outfit_ids = player_data.get("profileInfo", {}).get("clothes", [])
+    print("Outfit IDs:", outfit_ids)
+    
+    # Get equipped skills
+    equipped_skills = [skill.get("skillId") for skill in player_data.get("profileInfo", {}).get("equippedSkills", []) if isinstance(skill, dict)]
+    print("Equipped skills:", equipped_skills)
+    
+    # Get pet info
+    pet_info = player_data.get("petInfo", {})
+    pet_id = pet_info.get("petId")
+    
+    # Note: The sample response doesn't show equipped weapons, you'll need to adjust this
+    # based on where the API actually provides weapon information
+    weapon_id = None  # Placeholder - adjust based on actual API response
 
     required_starts = ["211", "214", "211", "203", "204", "205", "203"]
     fallback_ids = ["211000000", "214000000", "208000000", "203000000", "204000000", "205000000", "212000000"]
@@ -126,13 +118,9 @@ def outfit_image():
     # Set avatar position with fixed Y-coordinate
     background_width, background_height = 720, 720
 
-    avatar_id = None
-    for skill_id in equipped_skills:
-        if str(skill_id).endswith('06'):
-            avatar_id = skill_id
-            break
-    if avatar_id is None:
-        avatar_id = 406
+    # Get avatar ID directly from profileInfo
+    avatar_id = player_data.get("profileInfo", {}).get("avatarId", 406)
+    print("Avatar ID:", avatar_id)
 
     if avatar_id:
         avatar_url = f'https://characteriroxmar.vercel.app/chars?id={avatar_id}'
@@ -145,22 +133,20 @@ def outfit_image():
     # Add weapon overlay if weapon_id exists
     if weapon_id:
         weapon_url = f'https://system.ffgarena.cloud/api/iconsff?image={weapon_id}.png'
-        print(f"Fetching weapon image from: {weapon_url}")  # Debug print
+        print(f"Fetching weapon image from: {weapon_url}")
         weapon_image = fetch_and_process_image(weapon_url, size=(250, 128))
         
         if weapon_image:
-            print("Successfully fetched weapon image")  # Debug print
-            # Position the weapon image (adjusted position)
+            print("Successfully fetched weapon image")
             weapon_x = 460
             weapon_y = 397
             
-            # Ensure the weapon image has an alpha channel
             if weapon_image.mode != 'RGBA':
                 weapon_image = weapon_image.convert('RGBA')
             
             background_image.paste(weapon_image, (weapon_x, weapon_y), weapon_image)
         else:
-            print("Failed to fetch or process weapon image")  # Debug print
+            print("Failed to fetch or process weapon image")
 
     img_io = BytesIO()
     background_image.save(img_io, 'PNG')
