@@ -12,11 +12,28 @@ main_key = "NARAYAN"
 # ThreadPool for concurrent image fetching
 executor = ThreadPoolExecutor(max_workers=10)
 
-# Fetch player info
+# Fetch player info - MODIFICADA para a nova API
 def fetch_player_info(uid, region):
-    player_info_url = f'https://irotechlab-x-marco-lab-playerinfo.vercel.app/player-info?region={region}&uid={uid}'
+    player_info_url = f'https://freefirefwx-beta.squareweb.app/api/info_player?uid={uid}&region={region}'
     response = requests.get(player_info_url)
-    return response.json() if response.status_code == 200 else None
+    if response.status_code == 200:
+        data = response.json()
+        
+        # Transformar os dados para o formato esperado pelo resto do código
+        transformed = {
+            "AccountProfileInfo": {
+                "EquippedOutfit": data.get("profileInfo", {}).get("clothes", []),
+                "EquippedSkills": [skill.get("skillId") for skill in data.get("profileInfo", {}).get("equippedSkills", []) if isinstance(data.get("profileInfo", {}).get("equippedSkills", []), list) else []
+            },
+            "AccountInfo": {
+                "EquippedWeapon": data.get("basicInfo", {}).get("weaponSkinShows", [])
+            },
+            "petInfo": {
+                "id": data.get("petInfo", {}).get("petId")
+            }
+        }
+        return transformed
+    return None
 
 # Fetch and optionally resize an image
 def fetch_and_process_image(image_url, size=None):
